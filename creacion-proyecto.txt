@@ -1,0 +1,1 @@
+npx shadcn@latest create --preset "https://ui.shadcn.com/init?base=radix&style=nova&baseColor=neutral&theme=teal&iconLibrary=tabler&font=inter&menuAccent=subtle&menuColor=default&radius=small&template=vite&rtl=false" --template vite
