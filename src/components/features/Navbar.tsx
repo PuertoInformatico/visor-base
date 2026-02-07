@@ -21,8 +21,7 @@ import { Button } from '@/components/ui/button';
 
 import { IconMenu2, IconX } from '@tabler/icons-react';
 
-//import { ChevronDown, Menu, X, SquareArrowOutUpRightIcon } from "lucide-react";
-
+// Item
 interface NavItem {
     label: string;
     href: string;
@@ -30,6 +29,7 @@ interface NavItem {
     children: NavChildItem[];
 }
 
+// Subitem
 interface NavChildItem {
     label: string;
     href: string;
@@ -83,9 +83,8 @@ export const Navbar = () => {
         },
     ];
 
-
     return (
-        <nav className="w-full bg-white px-4 lg:px-6 py-4 flex justify-between items-center z-1">
+        <nav className="w-full bg-white px-2 lg:px-6 py-2 flex justify-between items-center z-1">
                 <Link to="/">
                     {/* LOGO PRINCIPAL */}
                     <img src="/img/logo_principal.png" alt="" className="h-8 sm:h-10 w-auto object-contain logo_principal" />
@@ -94,7 +93,7 @@ export const Navbar = () => {
                     {/* MENU DESKTOP */}
                     <NavigationMenu viewport={false}>
                         <NavigationMenuList>
-                            {navItems.map((item) => (
+                            {navItems.map((item) => (                               
                                 item.children.length > 0 ? (
                                     <NavigationMenuItem key={item.label}>
                                         <NavigationMenuTrigger>{item.label}</NavigationMenuTrigger>
@@ -163,17 +162,17 @@ export const Navbar = () => {
                                     </Link>
                                     {item.children.length > 0 && (
                                         <ul className="border-l border-gray-300 ml-3.5 flex flex-col gap-1 pl-2.5 py-0.5">
-                                        {item.children.map((child) => (
-                                            <li key={child.label}>
-                                            <Link
-                                                to={child.href}
-                                                className="flex h-7 min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 text-sm outline-none transition-colors hover:bg-gray-300 hover:text-gray-900 active:bg-gray-300 active:text-gray-900"
-                                                onClick={() => setIsMobileMenuOpen(false)}
-                                            >
-                                                {child.label}
-                                            </Link>
-                                            </li>
-                                        ))}
+                                            {item.children.map((child) => (
+                                                <li key={child.label}>
+                                                <Link
+                                                    to={child.href}
+                                                    className="flex h-7 min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 text-sm outline-none transition-colors hover:bg-gray-300 hover:text-gray-900 active:bg-gray-300 active:text-gray-900"
+                                                    onClick={() => setIsMobileMenuOpen(false)}
+                                                >
+                                                    {child.label}
+                                                </Link>
+                                                </li>
+                                            ))}
                                         </ul>
                                     )}
                                     </div>
