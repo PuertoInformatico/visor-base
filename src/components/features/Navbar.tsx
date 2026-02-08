@@ -42,7 +42,7 @@ export const Navbar = () => {
 
     const navItems: NavItem[] = [
         {
-            label: "Inicio",
+            label: "Visor",
             href: "/",
             description: "",
             children: []

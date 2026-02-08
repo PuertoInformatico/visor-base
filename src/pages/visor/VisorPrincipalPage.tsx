@@ -4,9 +4,6 @@ import { Map, View } from 'ol';
 import 'ol/ol.css';
 import { Vector as VectorLayer } from 'ol/layer';
 import { Vector as VectorSource } from 'ol/source';
-import GeoJSON from 'ol/format/GeoJSON';
-import { bbox as bboxStrategy } from 'ol/loadingstrategy';
-import { transformExtent } from 'ol/proj';
 import { MousePosition, ScaleLine  } from 'ol/control';
 import { DragPan, MouseWheelZoom, Select } from 'ol/interaction';
 import { click, pointerMove } from 'ol/events/condition';
@@ -32,7 +29,7 @@ import {
 import styles from '@/assets/css/visor.module.css';
 
 import { VertorialBaseLayer, AerialBaseLayer, TopoBaseLayer, BaseLayersSelector } from '@/components/features/visor/BaseLayers';
-import type { LayerVector, LayerVectorCategory } from '@/components/features/visor/VectorialLayers';
+import type { LayerVectorCategory } from '@/components/features/visor/VectorialLayers';
 import { createVectorLayerFromConfig, LayerVectorTree } from '@/components/features/visor/VectorialLayers';
 
 
@@ -68,7 +65,7 @@ export const VisorPrincipalPage = () => {
      * ELEMENTOS DEL VISOR
      */
 
-    const [isVisorLoading, setVisorLoading] = useState(false);// carga inicial de todos los elementos necesarios para el visor
+    //const [isVisorLoading, setVisorLoading] = useState(false);// carga inicial de todos los elementos necesarios para el visor
     const [isMapLoading, setMapLoading] = useState(true);// se carga alguna capa o recurso geográfico en el mapa
     const [menuColapsed, setMenuColapsed] = useState(false);
     const toggleMenuColapsed = (e: React.MouseEvent<HTMLButtonElement>) => {//ocular o muestra menu lateral
@@ -243,7 +240,7 @@ export const VisorPrincipalPage = () => {
      * CAPAS VECTORIALES
      */
 
-    // capas vectoriales disponibles para agregar al mapa
+    // capas vectoriales disponibles
     const [vectorialDisponibles, setVectorialDisponibles] = useState<LayerVectorCategory[]>([
         {
             key: "forestal",
@@ -287,50 +284,50 @@ export const VisorPrincipalPage = () => {
         
         
     ]);
-
-    // arbol de capas para mostrar en el panel de capas disponibles
-
-
-
-    /*
-    // función para activar o desactivar capas vectoriales
-    const toggleLayerVisibility = useCallback((categoryKey: string, layerKey: string, active: boolean) => {
-        setVectorialDisponibles((prev) => prev.map((category) => {
-            if (category.key !== categoryKey) return category;
-            return {
-                ...category,
-                layers: category.layers.map((layer) =>
-                    layer.key === layerKey ? { ...layer, active } : layer
-                )
-            };
-        }));
-    }, [setVectorialDisponibles]);
-    */
-
-    // capas vectoriales activas en el mapa
-    const activeVectorLayers = useMemo(() => {
+ 
+    // capas vectoriales activas
+    const activeLayerConfigs = useMemo(() => {
         return vectorialDisponibles
             .flatMap((category) => category.layers)
-            .filter((layer) => layer.active)
-            .map((layer) => createVectorLayerFromConfig(layer, setMapLoading));
+            .filter((layer) => layer.active);
     }, [vectorialDisponibles]);
 
-    // carga las capas vectoriales activas en el mapa
+    // agrega las capas cuando el mapa esta cargado y cuando cambian las capas activas
     useEffect(() => {
         if (!mapReady || !mapRef.current) return;
 
         const map = mapRef.current;
-        activeVectorLayers.forEach((layer) => map.addLayer(layer));
+        
+        // obtener todas las capas vectoriales actualmente en el mapa
+        const currentLayers = map.getLayers().getArray()
+            .filter((layer): layer is VectorLayer<VectorSource> => 
+                layer instanceof VectorLayer && layer.get('layerKey') !== undefined
+            );
 
-        return () => {
-            activeVectorLayers.forEach((layer) => map.removeLayer(layer));
-        };
-    }, [activeVectorLayers, mapReady]);
+        // obtener los layerKeys actuales y deseados
+        const currentKeys = new Set(currentLayers.map(layer => layer.get('layerKey')));
+        const desiredKeys = new Set(activeLayerConfigs.map(config => config.key));
+
+        // eliminar capas que ya no están activas
+        currentLayers.forEach((layer) => {
+            const layerKey = layer.get('layerKey');
+            if (!desiredKeys.has(layerKey)) {
+                map.removeLayer(layer);
+            }
+        });
+
+        // agregar capas nuevas que no estaban en el mapa
+        activeLayerConfigs.forEach((config) => {
+            if (!currentKeys.has(config.key)) {
+                const newLayer = createVectorLayerFromConfig(config, setMapLoading);
+                map.addLayer(newLayer);
+            }
+        });
+
+    }, [activeLayerConfigs, mapReady]);
 
 
 
-
-    //const [vectorialLayers, setVectorialLayers] = useState<VectorLayer[]>([]);
 
 
     //------------------------------------------
@@ -502,7 +499,7 @@ export const VisorPrincipalPage = () => {
                     <div className="overflow-y-auto scrollbar-thin max-h-[40vh] md:max-h-[calc(100dvh-250px)]">
                         <div>
                             <div className="border rounded-md p-2 flex gap-2 items-center p-3 bg-gray-50">
-                                <p className="text-muted-foreground text-xs">Ingrese algún parámetro para la búsqueda.</p>
+                                <p className="text-muted-foreground text-xs">Busque dentro de las capas disponibles.</p>
                             </div>
                         </div>
                     </div>
