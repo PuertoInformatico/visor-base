@@ -12,5 +12,7 @@ npx shadcn@latest add sonner
 npx shadcn@latest add navigation-menu
 npx shadcn@latest add sheet
 npx shadcn@latest add separator
+npx shadcn@latest add collapsible
+npx shadcn@latest add checkbox
 
 npm run dev
