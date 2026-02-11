@@ -81,8 +81,7 @@ export const VisorPrincipalPage = () => {
         e.preventDefault();
         setPanelIzquierda(panel);
     }
-    const mousePositionDivRef = useRef<HTMLDivElement>(null);
-
+    const mousePositionDivRef = useRef<HTMLDivElement>(null);// control de posicion del mouse en el mapa (coordenadas)
 
     
     /**
@@ -91,9 +90,8 @@ export const VisorPrincipalPage = () => {
 
     const mapElementRef = useRef<HTMLDivElement | null>(null);// elemento html del mapa
     const mapRef = useRef<Map | null>(null);// referencia al objeto mapa de OpenLayers
-    const [mapReady, setMapReady] = useState(false);// el mapa ha sido cargado 
+    const [mapReady, setMapReady] = useState(false);// el mapa ha sido cargado
 
-           
 
     // interaccion de mover el mapa 
     const dragPan = new DragPan();
@@ -187,8 +185,7 @@ export const VisorPrincipalPage = () => {
         };
 
         // control de escala
-        const scaleControl = new ScaleLine();        
-
+        const scaleControl = new ScaleLine();
 
         // Crear el mapa        
         const map = new Map({
@@ -327,43 +324,59 @@ export const VisorPrincipalPage = () => {
     }, [activeLayerConfigs, mapReady]);
 
 
+    /**
+     * BUSCADOR
+     */
+
+    const [searchText, setSearchText] = useState('');// texto ingresado en el buscador
+    const [searchResults, setSearchResults] = useState<any[]>([]);// resultados de la busqueda
+
+    const handleSearch = () => {
+        if (!searchText) return;
+
+       
+        const map = mapRef.current;
+        if (!map) return;
+
+        // obtener todas las capas vectoriales actualmente en el mapa
+        const vectorLayers = map.getLayers().getArray()
+            .filter((layer): layer is VectorLayer<VectorSource> => 
+                layer instanceof VectorLayer && layer.get('layerKey') !== undefined
+            );
+
+        const results: any[] = [];
+
+        vectorLayers.forEach((layer) => {
+            // obtener la configuración de la capa
+            const layerKey = layer.get('layerKey');
+            const category = vectorialDisponibles.find(cat => cat.layers.some(l => l.key === layerKey));
+            const layerConfig = category?.layers.find(l => l.key === layerKey);
+            if (!layerConfig) return;
+        
+            const source = layer.getSource();
+            if (!source) return;
+
+            const features = source.getFeatures();
+
+            features.forEach((feature) => {
+                const properties = feature.getProperties();
+                const searchableValues = layerConfig.columns_search.map(col => String(properties[col] || '')).join(' ').toLowerCase();
+                if (searchableValues.includes(searchText.toLowerCase())) {
+                    results.push({
+                        layerKey,
+                        layerTitle: layerConfig.title,
+                        feature
+                    });
+                }
+            });
+        });
+
+        setSearchResults(results);
+    }
 
 
 
-    //------------------------------------------
 
-    /*
-
-    const [ vectorWfsSource, setVectorWfsSource ] = useState(
-        new VectorSource({
-            format: new GeoJSON(),
-            url: function (extent) {
-                const extent32719 = transformExtent(extent, 'EPSG:4326', 'EPSG:32719');
-                return (
-                    'https://ide.regionmadrededios.gob.pe/geoserver/Servicio_OGC/ows?service=WFS' +
-                    '&version=2.0.0&request=GetFeature&typeName=Servicio_OGC%3ACon_ConcesionForFinMad' +
-                    '&outputFormat=application/json&srsname=EPSG:32719&' +
-                    'bbox=' +
-                    extent32719.join(',') +
-                    ',EPSG:32719'
-                );
-            },
-            strategy: bboxStrategy,
-        })
-    );
-   
-    const [ vectorWfsLayer, setVectorWfsLayer ] = useState(
-        new VectorLayer({
-            source: vectorWfsSource,
-            style: {
-                'stroke-width': 0.75,
-                'stroke-color': 'white',
-                'fill-color': 'rgba(100,100,100,0.25)',
-            },
-        })
-    );
-
-    */
     
 
     /**
@@ -391,13 +404,6 @@ export const VisorPrincipalPage = () => {
         setItemVectorSelected(undefined);
         setItemVectorLayerMeta(undefined);
     }
-
-
-
-
-
-   
-    
     
 
 
@@ -488,20 +494,36 @@ export const VisorPrincipalPage = () => {
                             <Input 
                                 type="text" 
                                 placeholder="Texto a buscar..." 
-                                className="flex-auto"
-                                
-                                
+                                className="flex-auto"  
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleSearch();
+                                    }
+                                }}
                             />
-                            <Button type="button" variant="default" title="BUSCAR" className="cursor-pointer" >
+                            <Button type="button" variant="default" title="BUSCAR" className="cursor-pointer" onClick={handleSearch}>
                                 Buscar
                             </Button>
                         </div>
                     <div className="overflow-y-auto scrollbar-thin max-h-[40vh] md:max-h-[calc(100dvh-250px)]">
-                        <div>
-                            <div className="border rounded-md p-2 flex gap-2 items-center p-3 bg-gray-50">
-                                <p className="text-muted-foreground text-xs">Busque dentro de las capas disponibles.</p>
+                        {searchResults.length > 0 ? (
+                            <div className="space-y-2">
+                                {searchResults.map((result, index) => (
+                                    <div key={index} className="p-2 border rounded-md hover:bg-gray-50 cursor-pointer" onClick={() => handleFeatureClick(result.feature)}>
+                                        <div className="text-xs text-muted-foreground">{result.layerTitle}</div>
+                                        <div className="text-sm">{'Sin texto'}</div>
+                                    </div>
+                                ))}
                             </div>
-                        </div>
+                        ) : (
+                            <div>
+                                <div className="border rounded-md p-2 flex gap-2 items-center p-3 bg-gray-50">
+                                 <p className="text-muted-foreground text-xs">Busque dentro de las capas disponibles.</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

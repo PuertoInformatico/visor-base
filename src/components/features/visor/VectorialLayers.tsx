@@ -238,3 +238,9 @@ export const createVectorLayerFromConfig = (layer: LayerVector, setMapLoading: R
     vectorLayer.set('layerKey', layer.key);
     return vectorLayer;
 };
+
+
+/**
+ * FEATURES
+ */
+
