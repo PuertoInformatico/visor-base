@@ -1,6 +1,11 @@
 .menuColapsed {
-    height: 42px;
-    overflow: hidden;
+  height: 42px;
+  overflow: hidden;
+}
+
+.scrollbarThin {
+  scrollbar-width: thin;
+  scrollbar-color: #bdbdbd #ffffff00;
 }
 
 .loader {

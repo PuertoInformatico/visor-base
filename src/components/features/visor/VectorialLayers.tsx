@@ -10,6 +10,7 @@ import GeoJSON from 'ol/format/GeoJSON';
 import { bbox as bboxStrategy } from 'ol/loadingstrategy';
 import { transformExtent } from 'ol/proj';
 import { Fill, Stroke, Style } from 'ol/style';
+import Feature from 'ol/Feature';
 
 /**
  * ELEMENTOS DE SELECCIÓN DE CAPAS VECTORIALES
@@ -36,6 +37,9 @@ export interface LayerVector {
     color: string;
     column_id: string;
     column_text: string;
+    column_owner: string;
+    column_identity: string;
+    column_date: string;
     column_status: string;
     columns_search: string[];
     active: boolean;   
@@ -241,6 +245,75 @@ export const createVectorLayerFromConfig = (layer: LayerVector, setMapLoading: R
 
 
 /**
- * FEATURES
+ * DETALLES DE FEATURE
  */
+
+interface FeatureVector {
+    layer_key: string;
+    layer_name: string;
+    layer_format: string;
+    layer_srs: string;    
+    layer_geometry: string;   
+    layer_color: string;
+    feature_id: string;
+    feature_name: string;
+    feature_owner: string;
+    feature_identity: string;
+    feature_date: string;
+    feature_status: boolean | string;
+}
+
+export interface FeatureVectorDetails extends FeatureVector {
+    feature_attributes: FeatureAttributes[] | [];
+}
+
+export interface FeatureVectorItem extends FeatureVector {
+    feature: Feature;
+}
+
+interface FeatureAttributes {
+    id: string;
+    label: string;
+    value: string | number | boolean;
+}
+
+export const formatDateFromText = (text?: string | null): string => {
+    if (!text) return '';
+    const match = text.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (!match) return text;
+    const [, year, month, day] = match;
+    return `${day}/${month}/${year}`;
+};
+
+
+export const extractFeatureDetails = (feature: any): FeatureVectorDetails => {
+    const layerMeta = feature.get('__layer');
+    const properties = feature.getProperties();
+    const featureAttributes = Object.entries(properties)
+        .filter(([key]) => key !== 'geometry' && key !== 'geom' && key !== '__layer')
+        .filter(([, value]) => value == null || ['string', 'number', 'boolean'].includes(typeof value))
+        .map(([key, value]) => ({
+            id: key,
+            label: key,
+            value: value == null ? '-' : (value as string | number | boolean),
+        }));
+
+    const details: FeatureVectorDetails = {
+        layer_key: layerMeta?.key || '',
+        layer_name: layerMeta?.title || '',
+        layer_format: layerMeta?.format || '',
+        layer_srs: layerMeta?.srs || '',
+        layer_geometry: layerMeta?.geometry || '',
+        layer_color: layerMeta?.color || '',
+        feature_id: properties[layerMeta?.column_id] || '',
+        feature_name: properties[layerMeta?.column_text] || '',
+        feature_owner: properties[layerMeta?.column_owner] || '',
+        feature_identity: properties[layerMeta?.column_identity] || '',
+        feature_date: properties[layerMeta?.column_date] || '',
+        feature_status: properties[layerMeta?.column_status] || '',
+        feature_attributes: featureAttributes,
+    };
+
+    return details;
+};
 
