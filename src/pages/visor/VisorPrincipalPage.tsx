@@ -38,11 +38,19 @@ import {
   InputGroupInput
 } from "@/components/ui/input-group";
 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+
 import styles from '@/assets/css/visor.module.css';
 
 import { VertorialBaseLayer, AerialBaseLayer, TopoBaseLayer, BaseLayersSelector } from '@/components/features/visor/BaseLayers';
 import type { LayerVectorCategory, FeatureVectorDetails, FeatureVectorItem } from '@/components/features/visor/VectorialLayers';
 import { createVectorLayerFromConfig, LayerVectorTree, extractFeatureDetails, formatDateFromText } from '@/components/features/visor/VectorialLayers';
+import { vectorialLayersConfig } from '@/data/vectorialLayersConfig';
 
 export const VisorPrincipalPage = () => {
 
@@ -314,55 +322,7 @@ export const VisorPrincipalPage = () => {
      */
 
     // capas vectoriales disponibles
-    const [vectorialDisponibles, setVectorialDisponibles] = useState<LayerVectorCategory[]>([
-        {
-            key: "forestal",
-            title: "Gerencia Forestal",
-            active: true,
-            layers: [
-                {
-                    key: "concesiones_maderables",
-                    title: "Concesiones Maderables",
-                    description: "Concesiones forestales con fines maderables",
-                    abbreviation: "CONFORFINMAD",
-                    format: "wfs",
-                    url: "https://ide.regionmadrededios.gob.pe/geoserver/Servicio_OGC/ows?service=WFS&request=GetFeature&typeName=Servicio_OGC:Con_ConcesionForFinMad",
-                    srs: "EPSG:32719",
-                    geometry: "Polygon",
-                    color: "14,165,233",
-                    column_id: "CONTRA",
-                    column_text: "CONTRA",
-                    column_owner: "NOMTIT",
-                    column_identity: "NRODOC",
-                    column_date: "FECCON",
-                    column_status: "ESTCON",
-                    columns_search: ["CONTRA", "NOMTIT", "NOMREL", "NRODOC"],
-                    active: true
-                },
-                {
-                    key: "concesiones_reforestacion",
-                    title: "Concesiones Reforestación",
-                    description: "Concesiones para Forestación y/o Reforestación",
-                    abbreviation: "CONFORREF",
-                    format: "wfs",
-                    url: "https://ide.regionmadrededios.gob.pe/geoserver/Servicio_OGC/ows?service=WFS&request=GetFeature&typeName=Servicio_OGC:Con_ConcesionForRef",
-                    srs: "EPSG:32719",
-                    geometry: "Polygon",
-                    color: "209,171,47",
-                    column_id: "CONTRA",
-                    column_text: "CONTRA",
-                    column_owner: "NOMTIT",
-                    column_identity: "NRODOC",
-                    column_date: "FECCON",
-                    column_status: "ESTCON",
-                    columns_search: ["CONTRA", "NOMTIT", "NOMREL", "NRODOC"],
-                    active: true
-                }
-            ]
-        },
-        
-        
-    ]);
+    const [vectorialDisponibles, setVectorialDisponibles] = useState<LayerVectorCategory[]>(vectorialLayersConfig);
  
     // capas vectoriales activas
     const activeLayerConfigs = useMemo(() => {
@@ -499,11 +459,21 @@ export const VisorPrincipalPage = () => {
         setWithResults(false);
     }
 
+    const handleSearchResultClick = (result: FeatureVectorItem) => {
+        // Limpiar selección previa
+        clickInteraction.getFeatures().clear();
+        // Agregar feature a la selección visual
+        clickInteraction.getFeatures().push(result.feature);
+        // Hacer zoom y mostrar detalles
+        zoomGeometry(result.feature as Feature);
+        handleFeatureClick(result.feature);
+    }
+
     // Memoizar la lista de resultados para evitar renders innecesarios
     const listaResultados = useMemo(() => (
         <div className="space-y-2">
             {searchResults.map((result, index) => (
-                <div key={index} className="p-2 border rounded-md hover:bg-gray-50 cursor-pointer" onClick={() => handleFeatureClick(result.feature)}>
+                <div key={index} className="p-2 border rounded-md hover:bg-gray-50 cursor-pointer" onClick={() => handleSearchResultClick(result)}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 mb-1">
                             <IconStack2 className="w-4 h-4 shrink-0"/> 
@@ -535,7 +505,7 @@ export const VisorPrincipalPage = () => {
                             <Separator orientation="vertical" />
                             <span>{result.layer_srs.toLocaleUpperCase()}</span>
                         </div>
-                        <div>
+                        <div className='leading-none'>
                             {result.feature_status as boolean ? (
                                 <Badge variant={result.feature_status ? "default" : "destructive"} className="text-xs">{result.feature_status ? "Activo" : "Inactivo"}</Badge>
                             ) : (
@@ -560,11 +530,13 @@ export const VisorPrincipalPage = () => {
 
     const [itemVectorSelected, setItemVectorSelected] = useState<FeatureLike | undefined>(undefined); // objeto vectorial seleccionado
     const [itemDetailSelected, setItemDetailSelected] = useState<FeatureVectorDetails | undefined>(undefined); // metadatos de la capa del objeto seleccionado (para mostrar titulo, columnas, etc)
+    const [activeTab, setActiveTab] = useState<string>('attributes'); // tab activo en el panel de detalles
 
     
     const handleFeatureClick = useCallback((feature: FeatureLike) => {
         setItemVectorSelected(feature);
-        console.log('Feature seleccionada:', feature);
+        setActiveTab('attributes'); // resetear el tab a attributes cuando se selecciona un elemento
+        
         // extraer metadatos de la capa adjuntados en createVectorLayerFromConfig
         try {
             const itemDetail = extractFeatureDetails(feature);
@@ -795,25 +767,41 @@ export const VisorPrincipalPage = () => {
                             <p className="text-muted-foreground text-xs">No se encontraron detalles del objeto.</p>
                         </div>
                     )}
-                    {
-                        itemDetailSelected && itemDetailSelected.feature_attributes.length > 0 &&
-                        <div className={"overflow-y-auto max-h-[40vh] md:max-h-[calc(100dvh-300px)] "+(styles.scrollbarThin)}>                            
-                            <table className="w-full table-auto border-collapse">
-                                <tbody>
-                                    <tr>
-                                        <th className="border px-2 py-1 text-xs font-medium w-1/3 bg-gray-100">ATRIBUTO</th>
-                                        <th className="border px-2 py-1 text-xs font-medium bg-gray-100">VALOR</th>
-                                    </tr>
-                                    {itemDetailSelected.feature_attributes.map((attr, index) => (
-                                        <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-                                            <td className="border px-2 py-1 text-xs font-medium w-1/3">{attr.label}</td>
-                                            <td className="border px-2 py-1 text-xs">{String(attr.value)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    }
+
+                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList>
+                            <TabsTrigger value="attributes">Detalles</TabsTrigger>
+                            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="attributes">
+                            <div>
+                                {
+                                    itemDetailSelected && itemDetailSelected.feature_attributes.length > 0 &&
+                                    <div className={"overflow-y-auto max-h-[40vh] md:max-h-[calc(100dvh-350px)] "+(styles.scrollbarThin)}>                            
+                                        <table className="w-full table-auto border-collapse">
+                                            <tbody>
+                                                <tr>
+                                                    <th className="border px-2 py-1 text-xs font-medium w-1/3 bg-gray-100">ATRIBUTO</th>
+                                                    <th className="border px-2 py-1 text-xs font-medium bg-gray-100">VALOR</th>
+                                                </tr>
+                                                {itemDetailSelected.feature_attributes.map((attr, index) => (
+                                                    <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
+                                                        <td className="border px-2 py-1 text-xs font-medium w-1/3">{attr.label}</td>
+                                                        <td className="border px-2 py-1 text-xs">{String(attr.value)}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                            </div>                            
+                        </TabsContent>
+                        <TabsContent value="analytics">
+                            <div>
+                                Contenido de Analytics
+                            </div>
+                        </TabsContent>
+                    </Tabs>                    
                 </div>
             </div>
 
