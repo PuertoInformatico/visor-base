@@ -21,7 +21,7 @@ export const vectorialLayersConfig: LayerVectorCategory[] = [
                 column_owner: "NOMTIT",
                 column_identity: "NRODOC",
                 column_date: "FECCON",
-                column_status: "ESTCON",
+                column_status: "ESTCON:1",//ESTCON -> columna de estado, 1 -> activo, * -> inactivo
                 columns_search: ["CONTRA", "NOMTIT", "NOMREL", "NRODOC"],
                 active: true
             },
@@ -40,7 +40,7 @@ export const vectorialLayersConfig: LayerVectorCategory[] = [
                 column_owner: "NOMTIT",
                 column_identity: "NRODOC",
                 column_date: "FECCON",
-                column_status: "ESTCON",
+                column_status: "ESTCON:1",
                 columns_search: ["CONTRA", "NOMTIT", "NOMREL", "NRODOC"],
                 active: true
             }

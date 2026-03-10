@@ -49,7 +49,7 @@ import styles from '@/assets/css/visor.module.css';
 
 import { VertorialBaseLayer, AerialBaseLayer, TopoBaseLayer, BaseLayersSelector } from '@/components/features/visor/BaseLayers';
 import type { LayerVectorCategory, FeatureVectorDetails, FeatureVectorItem } from '@/components/features/visor/VectorialLayers';
-import { createVectorLayerFromConfig, LayerVectorTree, extractFeatureDetails, formatDateFromText } from '@/components/features/visor/VectorialLayers';
+import { createVectorLayerFromConfig, LayerVectorTree, extractFeatureDetails, formatDateFromText, getStatusBoolean } from '@/components/features/visor/VectorialLayers';
 import { vectorialLayersConfig } from '@/data/vectorialLayersConfig';
 
 export const VisorPrincipalPage = () => {
@@ -441,7 +441,7 @@ export const VisorPrincipalPage = () => {
                         feature_owner: properties[layerConfig?.column_owner] || '',
                         feature_identity: properties[layerConfig?.column_identity] || '',
                         feature_date: properties[layerConfig?.column_date] || '',
-                        feature_status: properties[layerConfig?.column_status] || '',
+                        feature_status: getStatusBoolean(properties, layerConfig.column_status),
                         feature: feature
                     });
                 }
@@ -506,7 +506,7 @@ export const VisorPrincipalPage = () => {
                             <span>{result.layer_srs.toLocaleUpperCase()}</span>
                         </div>
                         <div className='leading-none'>
-                            {result.feature_status as boolean ? (
+                            {typeof result.feature_status === 'boolean' ? (
                                 <Badge variant={result.feature_status ? "default" : "destructive"} className="text-xs">{result.feature_status ? "Activo" : "Inactivo"}</Badge>
                             ) : (
                                 <span className="text-xs text-muted-foreground">{result.feature_status}</span>
@@ -540,6 +540,7 @@ export const VisorPrincipalPage = () => {
         // extraer metadatos de la capa adjuntados en createVectorLayerFromConfig
         try {
             const itemDetail = extractFeatureDetails(feature);
+
             setItemDetailSelected(itemDetail);            
         } catch (err) {
             console.warn('No se pudo leer __layer de la feature', err);            
@@ -754,7 +755,7 @@ export const VisorPrincipalPage = () => {
                                     <div className="">{itemDetailSelected.feature_name}</div>
                                 </div>
                                 <div>
-                                    {itemDetailSelected.feature_status as boolean ? (
+                                    {typeof itemDetailSelected.feature_status === 'boolean' ? (
                                         <Badge variant={itemDetailSelected.feature_status ? "default" : "destructive"} className="text-xs">{itemDetailSelected.feature_status ? "Activo" : "Inactivo"}</Badge>
                                     ) : (
                                         <span className="text-xs text-muted-foreground">{itemDetailSelected.feature_status}</span>

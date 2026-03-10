@@ -310,10 +310,20 @@ export const extractFeatureDetails = (feature: any): FeatureVectorDetails => {
         feature_owner: properties[layerMeta?.column_owner] || '',
         feature_identity: properties[layerMeta?.column_identity] || '',
         feature_date: properties[layerMeta?.column_date] || '',
-        feature_status: properties[layerMeta?.column_status] || '',
+        feature_status: getStatusBoolean(properties, layerMeta.column_status),
         feature_attributes: featureAttributes,
     };
 
     return details;
 };
 
+
+export const getStatusBoolean = (properties: Record<string, any>, columnStatus: string): boolean => {
+    // verificamos que tenga :
+    if (columnStatus.includes(':')) {
+        const [column, value] = columnStatus.split(':');           
+        return properties[column].toString() === value;
+    } else {            
+        return Boolean(properties[columnStatus]);
+    }       
+}
